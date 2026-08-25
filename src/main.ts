@@ -1,4 +1,9 @@
 import './style.css';
+import * as utils from './utils/utils';
+import {createProgram} from './utils/shader_utils'
+import { createFullscreenTriangle, drawFullscreenTriangle } from './fullscreen_quad'
+import vertSrc from './assets/shaders/passthrough.vert?raw'
+import fragSrc from './assets/shaders/gradient.frag?raw'
 
 const canvas = document.querySelector<HTMLCanvasElement>('#sim-canvas')!;
 const gl = canvas.getContext('webgl2', { 
@@ -13,22 +18,14 @@ if (!gl) {
 }
 
 // Resize canvas with the size set in CSS
-resizeCanvasToDisplaySize(canvas, gl);
-window.addEventListener('resize', () => resizeCanvasToDisplaySize(canvas, gl));
+utils.resizeCanvasToDisplaySize(canvas, gl);
+window.addEventListener('resize', () => utils.resizeCanvasToDisplaySize(canvas, gl));
 
 console.log("WebGl2 loaded succesfully");
 
-gl.clearColor(0, 0, 0.8, 1);
-gl.clear(gl.COLOR_BUFFER_BIT);
+const program = createProgram(gl, vertSrc, fragSrc);
+const vao = createFullscreenTriangle(gl);
 
-function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const displayWidth = Math.round(canvas.clientWidth * dpr);
-  const displayHeight = Math.round(canvas.clientHeight * dpr);
+gl.useProgram(program);
+drawFullscreenTriangle(gl, vao);
 
-  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-    canvas.width = displayWidth;
-    canvas.height = displayHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-}
