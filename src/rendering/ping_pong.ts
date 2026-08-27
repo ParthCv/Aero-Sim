@@ -1,7 +1,6 @@
 import { createFloatTexture, createFrameBuffer } from "./fbo";
 
 export class PingPongTarget {
-    private gl: WebGL2RenderingContext;
     private texA: WebGLTexture;
     private texB: WebGLTexture;
     private fboA: WebGLFramebuffer;
@@ -9,7 +8,6 @@ export class PingPongTarget {
     private readIsA: boolean = true;
 
     constructor(gl: WebGL2RenderingContext, width: number, height: number) {
-        this.gl = gl;
         this.texA = createFloatTexture(gl, width, height);
         this.texB = createFloatTexture(gl, width, height);
         this.fboA = createFrameBuffer(gl, this.texA);

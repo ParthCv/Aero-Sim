@@ -3,11 +3,12 @@ import * as utils from './utils/utils';
 import {createProgram} from './utils/shader_utils'
 
 import { createFullscreenTriangle, drawFullscreenTriangle } from './rendering/fullscreen_quad'
-import { createFloatTexture, createFrameBuffer } from './rendering/fbo';
+import { PingPongTarget } from './rendering/ping_pong';
 
 import vertSrc from './assets/shaders/passthrough.vert?raw'
 import fragSrc from './assets/shaders/gradient.frag?raw'
 import displayFragSrc from './assets/shaders/display.frag?raw'
+import feedbackFragSrc from './assets/shaders/feedback.frag?raw'
 
 const SIM_WIDTH = 512;
 const SIM_HEIGHT = 256;
@@ -44,8 +45,11 @@ const program = createProgram(gl, vertSrc, fragSrc);
 const vao = createFullscreenTriangle(gl);
 const uTimeLoc = gl.getUniformLocation(program, 'uTime');
 
-const simTexture = createFloatTexture(gl, SIM_WIDTH, SIM_HEIGHT);
-const simFrameBuffer = createFrameBuffer(gl, simTexture);
+const pingPong = new PingPongTarget(gl, SIM_WIDTH, SIM_HEIGHT);
+
+const feedbackProgram = createProgram(gl, vertSrc, feedbackFragSrc);
+const uPrevFrameLoc = gl.getUniformLocation(feedbackProgram, 'uPrevFrame');
+const uFeedbackTimeLoc = gl.getUniformLocation(feedbackProgram, 'uTime');
 
 const displayProgram = createProgram(gl, vertSrc, displayFragSrc);
 const uTextureLoc = gl.getUniformLocation(displayProgram, 'uTexture');
@@ -61,18 +65,22 @@ function frame(now : number) {
   
   utils.resizeCanvasToDisplaySize(canvas, gl!);
 
-  gl!.bindFramebuffer(gl!.FRAMEBUFFER, simFrameBuffer);
+  gl!.bindFramebuffer(gl!.FRAMEBUFFER, pingPong.writeFrameBuffer);
   gl!.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
-  gl!.useProgram(program);
-  gl!.uniform1f(uTimeLoc, deltaTime);
+  gl!.useProgram(feedbackProgram);
+  gl!.activeTexture(gl!.TEXTURE0);
+  gl!.uniform1f(uFeedbackTimeLoc, deltaTime);
+  gl!.uniform1i(uPrevFrameLoc, 0)
   drawFullscreenTriangle(gl!, vao);
+
+  pingPong.swap();
   
   gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
   
   gl!.viewport(0, 0, canvas.width, canvas.height);
   gl!.useProgram(displayProgram);
   gl!.activeTexture(gl!.TEXTURE0);
-  gl!.bindTexture(gl!.TEXTURE_2D, simTexture);
+  gl!.bindTexture(gl!.TEXTURE_2D, pingPong.readTexture);
   gl!.uniform1i(uTextureLoc, 0);
   drawFullscreenTriangle(gl!, vao);
 
