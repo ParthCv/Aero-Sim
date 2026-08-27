@@ -1,9 +1,16 @@
 import './style.css';
 import * as utils from './utils/utils';
 import {createProgram} from './utils/shader_utils'
-import { createFullscreenTriangle, drawFullscreenTriangle } from './fullscreen_quad'
+
+import { createFullscreenTriangle, drawFullscreenTriangle } from './rendering/fullscreen_quad'
+import { createFloatTexture, createFrameBuffer } from './rendering/fbo';
+
 import vertSrc from './assets/shaders/passthrough.vert?raw'
 import fragSrc from './assets/shaders/gradient.frag?raw'
+import displayFragSrc from './assets/shaders/display.frag?raw'
+
+const SIM_WIDTH = 512;
+const SIM_HEIGHT = 256;
 
 const canvas = document.querySelector<HTMLCanvasElement>('#sim-canvas')!;
 const gl = canvas.getContext('webgl2', { 
@@ -17,19 +24,31 @@ if (!gl) {
   throw new Error('WebGL2 not supported');
 }
 
-// Resize canvas with the size set in CSS
-utils.resizeCanvasToDisplaySize(canvas, gl);
-window.addEventListener('resize', () => utils.resizeCanvasToDisplaySize(canvas, gl));
+const floatColorBufferExt = gl.getExtension('EXT_color_buffer_float');
+if (!floatColorBufferExt) {
+  throw new Error(
+    'EXT_color_buffer_float not supported — this GPU/browser cannot render into float framebuffers.'
+  );
+}
 
 console.log("WebGl2 loaded succesfully");
+
+// Resize canvas with the size set in CSS
+window.addEventListener('resize', () => utils.resizeCanvasToDisplaySize(canvas, gl));
+
+let frameCount = 0;
+let lastFPSsampleTime = 0;
+let startTime = 0;
 
 const program = createProgram(gl, vertSrc, fragSrc);
 const vao = createFullscreenTriangle(gl);
 const uTimeLoc = gl.getUniformLocation(program, 'uTime');
 
-let frameCount = 0;
-let lastFPSsampleTime = 0;
-let startTime = 0;
+const simTexture = createFloatTexture(gl, SIM_WIDTH, SIM_HEIGHT);
+const simFrameBuffer = createFrameBuffer(gl, simTexture);
+
+const displayProgram = createProgram(gl, vertSrc, displayFragSrc);
+const uTextureLoc = gl.getUniformLocation(displayProgram, 'uTexture');
 
 function frame(now : number) {
   if (!startTime) {
@@ -42,8 +61,19 @@ function frame(now : number) {
   
   utils.resizeCanvasToDisplaySize(canvas, gl!);
 
+  gl!.bindFramebuffer(gl!.FRAMEBUFFER, simFrameBuffer);
+  gl!.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
   gl!.useProgram(program);
   gl!.uniform1f(uTimeLoc, deltaTime);
+  drawFullscreenTriangle(gl!, vao);
+  
+  gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+  
+  gl!.viewport(0, 0, canvas.width, canvas.height);
+  gl!.useProgram(displayProgram);
+  gl!.activeTexture(gl!.TEXTURE0);
+  gl!.bindTexture(gl!.TEXTURE_2D, simTexture);
+  gl!.uniform1i(uTextureLoc, 0);
   drawFullscreenTriangle(gl!, vao);
 
   frameCount++;
