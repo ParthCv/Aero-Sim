@@ -25,7 +25,38 @@ console.log("WebGl2 loaded succesfully");
 
 const program = createProgram(gl, vertSrc, fragSrc);
 const vao = createFullscreenTriangle(gl);
+const uTimeLoc = gl.getUniformLocation(program, 'uTime');
 
-gl.useProgram(program);
-drawFullscreenTriangle(gl, vao);
+let frameCount = 0;
+let lastFPSsampleTime = 0;
+let startTime = 0;
 
+function frame(now : number) {
+  if (!startTime) {
+    startTime = now;
+    lastFPSsampleTime = now;
+  }
+
+  const deltaTime = (now - startTime) / 1000;
+  const fpsEl = document.querySelector<HTMLElement>('#fps-readout');
+  
+  utils.resizeCanvasToDisplaySize(canvas, gl!);
+
+  gl!.useProgram(program);
+  gl!.uniform1f(uTimeLoc, deltaTime);
+  drawFullscreenTriangle(gl!, vao);
+
+  frameCount++;
+
+  const sinceLastSample = now - lastFPSsampleTime;
+  if (sinceLastSample > 500) {
+    const fps = (frameCount * 1000) / sinceLastSample;
+    if (fpsEl) fpsEl.textContent = ` FPS:${fps.toFixed(0)}`;
+    frameCount = 0;
+    lastFPSsampleTime = now;
+  }
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
