@@ -9,6 +9,8 @@ import vertSrc from './assets/shaders/passthrough.vert?raw'
 import fragSrc from './assets/shaders/gradient.frag?raw'
 import displayFragSrc from './assets/shaders/display.frag?raw'
 import feedbackFragSrc from './assets/shaders/feedback.frag?raw'
+import maskFragSrc from './assets/shaders/mask.frag?raw'
+import { createFloatTexture, createFrameBuffer } from './rendering/fbo';
 
 const SIM_WIDTH = 512;
 const SIM_HEIGHT = 256;
@@ -41,11 +43,16 @@ let frameCount = 0;
 let lastFPSsampleTime = 0;
 let startTime = 0;
 
-const program = createProgram(gl, vertSrc, fragSrc);
 const vao = createFullscreenTriangle(gl);
-const uTimeLoc = gl.getUniformLocation(program, 'uTime');
-
 const pingPong = new PingPongTarget(gl, SIM_WIDTH, SIM_HEIGHT);
+
+const maskTexture = createFloatTexture(gl, SIM_WIDTH, SIM_HEIGHT);
+const maskFrameBuffer = createFrameBuffer(gl, maskTexture);
+const maskProgram = createProgram(gl, vertSrc, maskFragSrc);
+
+const uCenterLoc = gl.getUniformLocation(maskProgram, 'uCenter');
+const uRadiusLoc = gl.getUniformLocation(maskProgram, 'uRadius');
+const uAspectLoc = gl.getUniformLocation(maskProgram, 'uAspect');
 
 const feedbackProgram = createProgram(gl, vertSrc, feedbackFragSrc);
 const uPrevFrameLoc = gl.getUniformLocation(feedbackProgram, 'uPrevFrame');
@@ -65,10 +72,21 @@ function frame(now : number) {
   
   utils.resizeCanvasToDisplaySize(canvas, gl!);
 
+  gl!.bindFramebuffer(gl!.FRAMEBUFFER, maskFrameBuffer);
+  gl!.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
+  gl!.useProgram(maskProgram);
+  gl!.uniform2f(uCenterLoc, 0.25, 0.5); // upstream-ish, vertically centered
+  gl!.uniform1f(uRadiusLoc, 0.08);
+  gl!.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
+  drawFullscreenTriangle(gl!, vao);
+
+  gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
+
   gl!.bindFramebuffer(gl!.FRAMEBUFFER, pingPong.writeFrameBuffer);
   gl!.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
   gl!.useProgram(feedbackProgram);
   gl!.activeTexture(gl!.TEXTURE0);
+  gl!.bindTexture(gl!.TEXTURE_2D, pingPong.readTexture);
   gl!.uniform1f(uFeedbackTimeLoc, deltaTime);
   gl!.uniform1i(uPrevFrameLoc, 0)
   drawFullscreenTriangle(gl!, vao);
