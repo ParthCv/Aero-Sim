@@ -128,6 +128,12 @@ export class LatticeBoltzmannSim {
 
             drawFullscreenTriangle(gl, this.vao);
         }
+        
+        this.group0.swap();
+        this.group1.swap();
+        this.group2.swap();
+    
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
     
     computeMacrosopic(): void {

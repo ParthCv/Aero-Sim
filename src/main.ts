@@ -60,9 +60,9 @@ gl.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
 drawFullscreenTriangle(gl, vao);
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-const TAU = 0.2;
+const TAU = 0.5;
 const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
-sim.initialize(1.0, [0.5, 0.0]);
+sim.initialize(1.0, [0.1, 0.0]);
 
 const displayProgram = createProgram(gl, vertSrc, velocityDisplayFragSrc);
 const uMacroLoc = gl.getUniformLocation(displayProgram, 'uMacro');
