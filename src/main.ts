@@ -6,7 +6,6 @@ import { createFullscreenTriangle, drawFullscreenTriangle } from './rendering/fu
 import { PingPongTarget } from './rendering/ping_pong';
 
 import vertSrc from './assets/shaders/passthrough.vert?raw'
-import fragSrc from './assets/shaders/gradient.frag?raw'
 import displayFragSrc from './assets/shaders/display.frag?raw'
 import feedbackFragSrc from './assets/shaders/feedback.frag?raw'
 import maskFragSrc from './assets/shaders/mask.frag?raw'
