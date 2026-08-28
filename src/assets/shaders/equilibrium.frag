@@ -2,8 +2,8 @@
 precision highp float;
 
 uniform float uDensity;
-uniform vec3 uVelocity;
-uniform int uGroup // 0 - f0-f4, 1 - f4-f7, 2 - f8
+uniform vec2 uVelocity;
+uniform int uGroup; // 0 - f0-f4, 1 - f4-f7, 2 - f8
 
 out vec4 outColor;
 
@@ -28,9 +28,9 @@ void main() {
         return;
     } else if (uGroup == 1) {
         outColor = vec4(
-            feq(vec2(0.0, -1.0), 1.0/9.0, rho, u)
-            feq(vec2(1.0, 1.0), 1.0/36.0, rho, u)
-            feq(vec2(-1.0, 1.0), 1.0/36.0, rho, u)
+            feq(vec2(0.0, -1.0), 1.0/9.0, rho, u),
+            feq(vec2(1.0, 1.0), 1.0/36.0, rho, u),
+            feq(vec2(-1.0, 1.0), 1.0/36.0, rho, u),
             feq(vec2(-1.0, -1.0), 1.0/36.0, rho, u)
         );
     } else {
