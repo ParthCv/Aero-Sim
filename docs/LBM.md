@@ -32,3 +32,16 @@ $$\rho = \sum_{i=0}^8 f_i = f_0 + f_1 + f_2 + \dots + f_8$$
 $$\rho \vec{u} = \sum_{i=0}^8 f_i \vec{e}_i$$
 ### Velocity ($\vec{v}$)
 $$\vec{u} = \frac{\rho \vec{u}}{\rho}$$
+# Collision
+With just the LB simulation particles are just stuck, so we need to simulate and add collision to static objects. Collision is where particles bump into each other, exchange momentum, and create fluid behavior like viscosity, drag, and vortices.
+## Bhatnagar-Gross-Krook
+The **BGK** equation approximation relaxes he current distribution $f_i$ toward its local equilibrium $f_i^{eq}$ 
+$$f_i^{\text{new}} = f_i - \frac{1}{\tau} \left( f_i - f_i^{eq} \right) = \left(1 - \frac{1}{\tau}\right) f_i + \frac{1}{\tau} f_i^{eq}$$
+In this $(f_i - f_i^{eq})$ is how far off balance the fluid packet is and $\frac{1}{\tau}$ represents how much of that imbalance gets corrected in a single time step.
+### Tau ($\tau$)
+$\tau$ controls how quickly a cell "forgets" its current state and relaxes into equilibrium.
+#### Kinematic viscosity ($\nu$)
+$$\nu = \frac{1}{3}\left(\tau - \frac{1}{2}\right)$$
+- **$\tau \to 0.5$ ($\nu \to 0$):** Very low viscosity (water, air). The fluid forms sharp, swirling eddies and turbulent vortex streets, but becomes numerically fragile (can blow up to `NaN` if velocity gets too high).
+- **$\tau \approx 0.6 - 1.0$:** Moderate viscosity (oil). Smooth, stable, and visually responsive.    
+- **$\tau > 1.5$:** High viscosity (honey, molasses). Heavy damping that quickly smooths out disturbances.
