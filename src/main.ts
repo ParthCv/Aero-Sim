@@ -56,6 +56,7 @@ const uAspectLoc = gl.getUniformLocation(maskProgram, 'uAspect');
 
 const feedbackProgram = createProgram(gl, vertSrc, feedbackFragSrc);
 const uPrevFrameLoc = gl.getUniformLocation(feedbackProgram, 'uPrevFrame');
+const uMaskLoc = gl.getUniformLocation(feedbackProgram, 'uMask');
 const uFeedbackTimeLoc = gl.getUniformLocation(feedbackProgram, 'uTime');
 
 const displayProgram = createProgram(gl, vertSrc, displayFragSrc);
@@ -76,7 +77,7 @@ function frame(now : number) {
   gl!.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
   gl!.useProgram(maskProgram);
   gl!.uniform2f(uCenterLoc, 0.25, 0.5); // upstream-ish, vertically centered
-  gl!.uniform1f(uRadiusLoc, 0.08);
+  gl!.uniform1f(uRadiusLoc, 0.2);
   gl!.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
   drawFullscreenTriangle(gl!, vao);
 
@@ -87,8 +88,11 @@ function frame(now : number) {
   gl!.useProgram(feedbackProgram);
   gl!.activeTexture(gl!.TEXTURE0);
   gl!.bindTexture(gl!.TEXTURE_2D, pingPong.readTexture);
+  gl!.uniform1i(uPrevFrameLoc, 0);
+  gl!.activeTexture(gl!.TEXTURE1);
+  gl!.bindTexture(gl!.TEXTURE_2D, maskTexture);
+  gl!.uniform1i(uMaskLoc, 1);
   gl!.uniform1f(uFeedbackTimeLoc, deltaTime);
-  gl!.uniform1i(uPrevFrameLoc, 0)
   drawFullscreenTriangle(gl!, vao);
 
   pingPong.swap();
@@ -107,7 +111,7 @@ function frame(now : number) {
   const sinceLastSample = now - lastFPSsampleTime;
   if (sinceLastSample > 500) {
     const fps = (frameCount * 1000) / sinceLastSample;
-    if (fpsEl) fpsEl.textContent = ` FPS:${fps.toFixed(0)}`;
+    if (fpsEl) fpsEl.textContent = `FPS:${fps.toFixed(0)}`;
     frameCount = 0;
     lastFPSsampleTime = now;
   }
