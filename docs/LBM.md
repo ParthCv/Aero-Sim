@@ -1,4 +1,5 @@
-the **Lattice Boltzman Method** is a way to simulate fuids like air in this case. Instead of tracking billions of molecules or Navier Stroke equations we use grids to hold cells of fluid particles moving in few fixed directions.
+# Lattice Boltzmann Method
+the **Lattice Boltzmann Method** is a way to simulate fluids like air in this case. Instead of tracking billions of molecules or Navier Stroke equations we use grids to hold cells of fluid particles moving in few fixed directions.
 ## D2Q9
 **D2** = 2 dimensions; **Q9** = 9 discrete directions, 
 
@@ -43,5 +44,20 @@ $\tau$ controls how quickly a cell "forgets" its current state and relaxes into 
 #### Kinematic viscosity ($\nu$)
 $$\nu = \frac{1}{3}\left(\tau - \frac{1}{2}\right)$$
 - **$\tau \to 0.5$ ($\nu \to 0$):** Very low viscosity (water, air). The fluid forms sharp, swirling eddies and turbulent vortex streets, but becomes numerically fragile (can blow up to `NaN` if velocity gets too high).
+- 
 - **$\tau \approx 0.6 - 1.0$:** Moderate viscosity (oil). Smooth, stable, and visually responsive.    
 - **$\tau > 1.5$:** High viscosity (honey, molasses). Heavy damping that quickly smooths out disturbances.
+# Streaming
+Streaming step turns static equilibrium grid into an active time-stepping simulation. In real physics, fluid packets travel forward. So we have to figure out at the pixel "which neighbor sent fluid in direction $\vec{e}_i$ that arrives at my cell right now?",  the fluid arriving at cell $\vec{x}$ in direction $\vec{e}_i$ had to come from the upstream neighbor at $\vec{x} - \vec{e}_i$ .
+$$f_i^{\text{streamed}}(\vec{x}) = f_i^{\text{post-collision}}(\vec{x} - \vec{e}_i)$$
+## Grid Offsets to UV Space
+UV coordinates run form `0.0` to `1.0` , so shifting UVs by 1 cell means shifting by1 texel.
+$$\text{texelSize} = \left( \frac{1}{\text{width}}, \frac{1}{\text{height}} \right)$$
+To pull direction $\vec{e}_i = (e_x, e_y)$, sample the texture at:
+
+$$\text{UV}_{\text{sample}} = \text{vUv} - \vec{e}_i \cdot \text{texelSize}$$
+
+- **Direction $f_1$ ($+x$, moving Right):** Pull from Left $\rightarrow$ `vUv - vec2(1.0, 0.0) * texelSize`
+- **Direction $f_3$ ($-x$, moving Left):** Pull from Right $\rightarrow$ `vUv - vec2(-1.0, 0.0) * texelSize
+- **Direction $f_2$ ($+y$, moving Up):** Pull from Down $\rightarrow$ `vUv - vec2(0.0, 1.0) * texelSize`
+- **Direction $f_5$ ($+x, +y$, moving NE):** Pull from SW $\rightarrow$ `vUv - vec2(1.0, 1.0) * texelSize`
