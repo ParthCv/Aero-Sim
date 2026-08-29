@@ -7,6 +7,7 @@ import vertSrc from '../assets/shaders/passthrough.vert?raw'
 import equilibriumFragShader from '../assets/shaders/equilibrium.frag?raw'
 import collisionFragShader from "../assets/shaders/collision.frag?raw"
 import macroscopicFragShader from '../assets/shaders/macroscopic.frag?raw'
+import streamingFragShader from "../assets/shaders/streaming.frag?raw"
 
 export class LatticeBoltzmannSim {
     private gl: WebGL2RenderingContext;
@@ -37,6 +38,11 @@ export class LatticeBoltzmannSim {
     private uMacroF4to7Loc: WebGLUniformLocation | null;
     private uMacroF8Loc: WebGLUniformLocation | null;
 
+    private streamingProgram: WebGLProgram;
+    private uStrSelfLoc: WebGLUniformLocation | null;
+    private uStrTexelSizeLoc: WebGLUniformLocation | null;
+    private uStrGroupLoc: WebGLUniformLocation | null; 
+
     constructor(gl: WebGL2RenderingContext, width: number, height: number, vao: WebGLVertexArrayObject) {
         this.gl = gl;
         this.width = width;
@@ -65,6 +71,11 @@ export class LatticeBoltzmannSim {
         this.uMacroF0to3Loc = gl.getUniformLocation(this.macroscopicProgram, 'uF0to3');
         this.uMacroF4to7Loc = gl.getUniformLocation(this.macroscopicProgram, 'uF4to7');
         this.uMacroF8Loc = gl.getUniformLocation(this.macroscopicProgram, 'uF8');
+
+        this.streamingProgram = createProgram(gl, vertSrc, streamingFragShader);
+        this.uStrSelfLoc = gl.getUniformLocation(this.streamingProgram, 'uSelf');
+        this.uStrTexelSizeLoc = gl.getUniformLocation(this.streamingProgram, 'uTexelSize');
+        this.uStrGroupLoc = gl.getUniformLocation(this.streamingProgram, 'uGroup');
     }
 
     get macroscopicTexture(): WebGLTexture {
@@ -135,6 +146,37 @@ export class LatticeBoltzmannSim {
     
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
+
+    stream(): void {
+        const { gl } = this;
+
+        gl.useProgram(this.streamingProgram);
+        gl.viewport(0, 0, this.width, this.height);
+        gl.uniform2f(this.uStrTexelSizeLoc, 1 / this.width, 1 / this.height);
+
+        const groups: [PingPongTarget, number][] = [
+            [this.group0, 0],
+            [this.group1, 1],
+            [this.group2, 2]
+        ];
+
+        for (const [target, groupIndex] of groups) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, target.writeFrameBuffer);
+            gl.uniform1i(this.uStrGroupLoc, groupIndex);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, target.readTexture);
+            gl.uniform1i(this.uStrSelfLoc, 0);
+
+            drawFullscreenTriangle(gl, this.vao);
+        }
+
+        this.group0.swap();
+        this.group1.swap();
+        this.group2.swap();
+    
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
     
     computeMacrosopic(): void {
         const { gl } = this;
@@ -157,5 +199,11 @@ export class LatticeBoltzmannSim {
 
         drawFullscreenTriangle(gl, this.vao);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    step(tau: number): void {
+        this.collide(tau);
+        this.stream();
+        this.computeMacrosopic();
     }
 }

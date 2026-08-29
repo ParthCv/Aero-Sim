@@ -75,8 +75,7 @@ function frame(now : number) {
   
   utils.resizeCanvasToDisplaySize(canvas, gl!);
 
-  sim.collide(TAU);
-  sim.computeMacrosopic();
+  sim.step(TAU);
 
   gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
   gl!.viewport(0, 0, canvas.width, canvas.height);
