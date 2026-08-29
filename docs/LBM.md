@@ -61,3 +61,31 @@ $$\text{UV}_{\text{sample}} = \text{vUv} - \vec{e}_i \cdot \text{texelSize}$$
 - **Direction $f_3$ ($-x$, moving Left):** Pull from Right $\rightarrow$ `vUv - vec2(-1.0, 0.0) * texelSize
 - **Direction $f_2$ ($+y$, moving Up):** Pull from Down $\rightarrow$ `vUv - vec2(0.0, 1.0) * texelSize`
 - **Direction $f_5$ ($+x, +y$, moving NE):** Pull from SW $\rightarrow$ `vUv - vec2(1.0, 1.0) * texelSize`
+# Bounce-Back
+Right now we have initialized all cells with uniform density $\rho=1.0$ and uniform velocity $\vec{u}=(0.1, 0)$. We need to add an **obstacle mask with bounce-back boundary condition**.
+## Momentum Inversion
+In real fluid dynamics, when viscous fluid contacts a solid wall, molecular collisions reflect incoming particles directly backward.
+
+In LBM, each discrete direction vector $\vec{e}_i$ has an exact opposite vector.
+
+$$\vec{e}_{\bar{i}} = -\vec{e}_i$$
+
+- If fluid leaves a fluid cell travelling toward a wall along direction $\vec{e}_i$, it hits the boundary halfway to the solid node and reflects directly back along direction $\vec{e}_{\bar{i}}$ into the same fluid cell.
+- Because the outgoing momentum $+\vec{e}_i$ and incoming reflected momentum $-\vec{e}_i$ cancel out, the net velocity at the boundary interface averages exactly to zero:
+
+$$\vec{u}_{\text{wall}} = \frac{1}{2}(\vec{u}_{\text{incident}} + \vec{u}_{\text{reflected}}) = \mathbf{0}$$
+## Obstacle Mask
+Let $M(\vec{x})$ be an obstacle mask defined across the grid:
+
+$$M(\vec{x}) = \begin{cases} 1.0 & \text{if cell } \vec{x} \text{ is a solid obstacle / wall} \\ 0.0 & \text{if cell } \vec{x} \text{ is fluid} \end{cases}$$
+
+When computing the incoming distribution $f_i^{\text{new}}(\vec{x})$ at the current cell $\vec{x}$:
+1. Check the upstream neighbor cell $\vec{x}_{\text{upstream}} = \vec{x} - \vec{e}_i$.
+2. **If upstream is FLUID ($M(\vec{x} - \vec{e}_i) == 0.0$):**
+    Pull normally from the neighbor's post-collision state in the same direction:
+    $$f_i^{\text{new}}(\vec{x}) = f_i^{\text{post-coll}}(\vec{x} - \vec{e}_i)$$
+3. **If upstream is SOLID ($M(\vec{x} - \vec{e}_i) == 1.0$):**
+    Do not read from the solid cell. Instead, take your **own cell's** post-collision distribution in the **opposite direction** $\bar{i}$:
+    $$f_i^{\text{new}}(\vec{x}) = f_{\bar{i}}^{\text{post-coll}}(\vec{x})$$
+
+$$\boxed{f_i^{\text{new}}(\vec{x}) = \left[ 1 - M(\vec{x} - \vec{e}_i) \right] \cdot f_i^{\text{post-coll}}(\vec{x} - \vec{e}_i) + M(\vec{x} - \vec{e}_i) \cdot f_{\bar{i}}^{\text{post-coll}}(\vec{x})}$$
