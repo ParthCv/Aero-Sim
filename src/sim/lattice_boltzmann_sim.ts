@@ -39,7 +39,10 @@ export class LatticeBoltzmannSim {
     private uMacroF8Loc: WebGLUniformLocation | null;
 
     private streamingProgram: WebGLProgram;
-    private uStrSelfLoc: WebGLUniformLocation | null;
+    private uStrF0to3Loc: WebGLUniformLocation | null;
+    private uStrF4to7Loc: WebGLUniformLocation | null;
+    private uStrF8Loc: WebGLUniformLocation | null;
+    private uStrMaskLoc: WebGLUniformLocation | null;
     private uStrTexelSizeLoc: WebGLUniformLocation | null;
     private uStrGroupLoc: WebGLUniformLocation | null; 
 
@@ -73,7 +76,10 @@ export class LatticeBoltzmannSim {
         this.uMacroF8Loc = gl.getUniformLocation(this.macroscopicProgram, 'uF8');
 
         this.streamingProgram = createProgram(gl, vertSrc, streamingFragShader);
-        this.uStrSelfLoc = gl.getUniformLocation(this.streamingProgram, 'uSelf');
+        this.uStrF0to3Loc = gl.getUniformLocation(this.streamingProgram, 'uF0to3');
+        this.uStrF4to7Loc = gl.getUniformLocation(this.streamingProgram, 'uF4to7');
+        this.uStrF8Loc = gl.getUniformLocation(this.streamingProgram, 'uF8');
+        this.uStrMaskLoc = gl.getUniformLocation(this.streamingProgram, 'uMask');
         this.uStrTexelSizeLoc = gl.getUniformLocation(this.streamingProgram, 'uTexelSize');
         this.uStrGroupLoc = gl.getUniformLocation(this.streamingProgram, 'uGroup');
     }
@@ -147,7 +153,7 @@ export class LatticeBoltzmannSim {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    stream(): void {
+    stream(maskTexture: WebGLTexture): void {
         const { gl } = this;
 
         gl.useProgram(this.streamingProgram);
@@ -165,8 +171,20 @@ export class LatticeBoltzmannSim {
             gl.uniform1i(this.uStrGroupLoc, groupIndex);
 
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, target.readTexture);
-            gl.uniform1i(this.uStrSelfLoc, 0);
+            gl.bindTexture(gl.TEXTURE_2D, this.group0.readTexture);
+            gl.uniform1i(this.uStrF0to3Loc, 0);
+
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, this.group1.readTexture);
+            gl.uniform1i(this.uStrF4to7Loc, 1);
+
+            gl.activeTexture(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, this.group2.readTexture);
+            gl.uniform1i(this.uStrF8Loc, 2);
+
+            gl.activeTexture(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, maskTexture);
+            gl.uniform1i(this.uStrMaskLoc, 3);
 
             drawFullscreenTriangle(gl, this.vao);
         }
@@ -201,9 +219,9 @@ export class LatticeBoltzmannSim {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    step(tau: number): void {
+    step(maskTexture: WebGLTexture ,tau: number): void {
         this.collide(tau);
-        this.stream();
+        this.stream(maskTexture);
         this.computeMacrosopic();
     }
 }
