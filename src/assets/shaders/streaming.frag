@@ -1,7 +1,10 @@
 #version 300 es
 precision highp float;
 
-uniform sampler2D uSelf;
+uniform sampler2D uF0to3;
+uniform sampler2D uF4to7;
+uniform sampler2D uF8;
+uniform sampler2D uMask;
 uniform vec2 uTexelSize;
 uniform int uGroup;
 
@@ -9,20 +12,47 @@ in vec2 vUv;
 out vec4 outColor;
 
 void main() {
+    vec4 own0 = texture(uF0to3, vUv);
+    vec4 own1 = texture(uF4to7, vUv);
+    vec4 own2 = texture(uF8, vUv);
+
     if (uGroup == 0) {
-        float f0 = texture(uSelf, vUv).x;
-        float f1 = texture(uSelf, vUv - vec2(1.0, 0.0) * uTexelSize).y;
-        float f2 = texture(uSelf, vUv - vec2(0.0, 1.0) * uTexelSize).z;
-        float f3 = texture(uSelf, vUv - vec2(-1.0, 0.0) * uTexelSize).w;
+        float f0 = own0.x;
+
+        vec2 src1 = vUv - vec2(1.0, 0.0) * uTexelSize;
+        float solid1 = texture(uMask, src1).r;
+        float f1 = mix(texture(uF0to3, src1).y, own0.w, solid1); // opposite: f3
+
+        vec2 src2 = vUv - vec2(0.0, 1.0) * uTexelSize;
+        float solid2 = texture(uMask, src2).r;
+        float f2 = mix(texture(uF0to3, src2).z, own1.x, solid2); // opposite: f4
+
+        vec2 src3 = vUv - vec2(-1.0, 0.0) * uTexelSize;
+        float solid3 = texture(uMask, src3).r;
+        float f3 = mix(texture(uF0to3, src3).w, own0.y, solid3); // opposite: f1
+        
         outColor = vec4(f0, f1, f2, f3);
     } else if (uGroup == 1) {
-        float f4 = texture(uSelf, vUv - vec2(0.0, -1.0) * uTexelSize).x;
-        float f5 = texture(uSelf, vUv - vec2(1.0, 1.0) * uTexelSize).y;
-        float f6 = texture(uSelf, vUv - vec2(-1.0, 1.0) * uTexelSize).z;
-        float f7 = texture(uSelf, vUv - vec2(-1.0, -1.0) * uTexelSize).w;
+        vec2 src4 = vUv - vec2(0.0, -1.0) * uTexelSize;
+        float solid4 = texture(uMask, src4).r;
+        float f4 = mix(texture(uF4to7, src4).x, own0.z, solid4); // opposite: f2
+
+        vec2 src5 = vUv - vec2(1.0, 1.0) * uTexelSize;
+        float solid5 = texture(uMask, src5).r;
+        float f5 = mix(texture(uF4to7, src5).y, own1.w, solid5); // opposite: f7
+
+        vec2 src6 = vUv - vec2(-1.0, 1.0) * uTexelSize;
+        float solid6 = texture(uMask, src6).r;
+        float f6 = mix(texture(uF4to7, src6).z, own2.x, solid6); // opposite: f8
+
+        vec2 src7 = vUv - vec2(-1.0, -1.0) * uTexelSize;
+        float solid7 = texture(uMask, src7).r;
+        float f7 = mix(texture(uF4to7, src7).w, own1.y, solid7); // opposite: f5
         outColor = vec4(f4, f5, f6, f7);
     } else {
-        float f8 = texture(uSelf, vUv - vec2(1.0, -1.0) * uTexelSize).x;
+        vec2 src8 = vUv - vec2(1.0, -1.0) * uTexelSize;
+        float solid8 = texture(uMask, src8).r;
+        float f8 = mix(texture(uF8, src8).x, own1.z, solid8); // opposite: f6
         outColor = vec4(f8, 0.0, 0.0, 0.0);
     }
 }

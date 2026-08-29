@@ -2,6 +2,7 @@
 precision highp float;
 
 uniform sampler2D uMacro;
+uniform sampler2D uMask;
 
 in vec2 vUv;
 out vec4 outColor;
@@ -15,6 +16,12 @@ vec3 jetColormap(float t) {
 }
 
 void main() {
+    float isObstacle = texture(uMask, vUv).r;
+    if (isObstacle > 0.5) {
+      outColor = vec4(1.0);
+      return;
+    }
+
     vec4 macro = texture(uMacro, vUv);
     float speed = length(macro.gb);
     float t = clamp(speed / 0.2, 0.0, 1.0);
