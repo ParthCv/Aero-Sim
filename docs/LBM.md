@@ -89,3 +89,28 @@ When computing the incoming distribution $f_i^{\text{new}}(\vec{x})$ at the curr
     $$f_i^{\text{new}}(\vec{x}) = f_{\bar{i}}^{\text{post-coll}}(\vec{x})$$
 
 $$\boxed{f_i^{\text{new}}(\vec{x}) = \left[ 1 - M(\vec{x} - \vec{e}_i) \right] \cdot f_i^{\text{post-coll}}(\vec{x} - \vec{e}_i) + M(\vec{x} - \vec{e}_i) \cdot f_{\bar{i}}^{\text{post-coll}}(\vec{x})}$$
+# Result: Phase 1
+
+<div align="center">
+	<img src="images/phase_1.png" alt="D2q9">
+</div>
+Right now there is no outlet for the fluid to escape, or an inlet. That is the next step.
+# Boundary Conditions
+When you stream distributions across the grid, fluid packets move one step along their lattice vectors $\vec{e}_i$:
+$$f_i(\vec{x}, t + \Delta t) = f_i^*(\vec{x} - \vec{e}_i, t)$$
+At any boundary, this equation breaks down because the upstream coordinate $\vec{x} - \vec{e}_i$ lies outside the simulation domain and because macroscopic density and velocity depend on having all 9 directions
+$$\rho = \sum_{i=0}^8 f_i, \qquad \rho \vec{u} = \sum_{i=0}^8 f_i \vec{e}_i$$the boundary condition must construct the missing distributions ($f_1, f_5, f_8$) so that the resulting macroscopic velocity matches desired inlet speed $\vec{u}_{\text{inlet}}$.
+## Inlet Theory
+There are two ways to reconstruct the missing inlet distributions.
+### Equilibrium Dirichlet Condition
+The direct approach assumes that because the inlet is infinitely far upstream from disturbances, the incoming state at $x = 0$ is in pure equilibrium at density $\rho_0 = 1.0$ and velocity $\vec{u}_{\text{inlet}} = (u_0, 0)$:
+
+$$f_i(0, y) = f_i^{\text{eq}}(\rho = 1.0, \, \vec{u} = \vec{u}_{\text{inlet}})$$
+## Outlet Theory
+At the right boundary ($x = W - 1$), fluid packets moving leftward ($f_3, f_6, f_7$) are missing because they would have to come from $x \ge W$. If we simply leave them empty or bounce them back, create a solid wall that reflects pressure waves back into the domain, destroying the wake patterns.
+
+To let vortices leave the simulation without artificial reflections, the boundary should satisfy a continuous Sommerfeld radiation (or convective) condition:
+
+$$\frac{\partial f_i}{\partial t} + U_{\text{conv}} \frac{\partial f_i}{\partial x} = 0$$
+
+where $U_{\text{conv}}$ is the speed at which structures move downstream.

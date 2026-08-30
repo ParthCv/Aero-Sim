@@ -36,6 +36,16 @@ void main() {
         g1.w * vec2(-1.0, -1.0) + g2.x * vec2( 1.0, -1.0);
 
     vec2 u = momentum / rho;
+    // Safety clamp: keeps the simulation from diverging into NaN even if
+    // local flow briefly exceeds the stable regime, at the cost of slightly
+    // non-physical clipping in extreme cases -- a completely standard
+    // tradeoff for a real-time sim.
+    float speed = length(u);
+    float maxSpeed = 0.8;
+    if (speed > maxSpeed) {
+    u = u * (maxSpeed / speed);
+}
+
     float invTau = 1.0 / uTau;
 
     if (uGroup == 0) {
