@@ -45,6 +45,8 @@ export class LatticeBoltzmannSim {
     private uStrMaskLoc: WebGLUniformLocation | null;
     private uStrTexelSizeLoc: WebGLUniformLocation | null;
     private uStrGroupLoc: WebGLUniformLocation | null; 
+    private uStrInletVelocityLoc: WebGLUniformLocation | null;
+    private uStrInletDensityLoc: WebGLUniformLocation | null;
 
     constructor(gl: WebGL2RenderingContext, width: number, height: number, vao: WebGLVertexArrayObject) {
         this.gl = gl;
@@ -82,6 +84,8 @@ export class LatticeBoltzmannSim {
         this.uStrMaskLoc = gl.getUniformLocation(this.streamingProgram, 'uMask');
         this.uStrTexelSizeLoc = gl.getUniformLocation(this.streamingProgram, 'uTexelSize');
         this.uStrGroupLoc = gl.getUniformLocation(this.streamingProgram, 'uGroup');
+        this.uStrInletVelocityLoc = gl.getUniformLocation(this.streamingProgram, 'uInletVelocity');
+        this.uStrInletDensityLoc = gl.getUniformLocation(this.streamingProgram, 'uInletDensity');
     }
 
     get macroscopicTexture(): WebGLTexture {
@@ -153,12 +157,14 @@ export class LatticeBoltzmannSim {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    stream(maskTexture: WebGLTexture): void {
+    stream(maskTexture: WebGLTexture, inletDensity: number, inletVelocity: [number, number]): void {
         const { gl } = this;
 
         gl.useProgram(this.streamingProgram);
         gl.viewport(0, 0, this.width, this.height);
         gl.uniform2f(this.uStrTexelSizeLoc, 1 / this.width, 1 / this.height);
+        gl.uniform1f(this.uStrInletDensityLoc, inletDensity);
+        gl.uniform2f(this.uStrInletVelocityLoc, inletVelocity[0], inletVelocity[1]);
 
         const groups: [PingPongTarget, number][] = [
             [this.group0, 0],
@@ -219,9 +225,9 @@ export class LatticeBoltzmannSim {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    step(maskTexture: WebGLTexture ,tau: number): void {
+    step(maskTexture: WebGLTexture, tau: number, inletDensity: number, inletVelocity: [number, number]): void {
         this.collide(tau);
-        this.stream(maskTexture);
+        this.stream(maskTexture, inletDensity, inletVelocity);
         this.computeMacrosopic();
     }
 }

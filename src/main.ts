@@ -54,15 +54,17 @@ const uAspectLoc = gl.getUniformLocation(maskProgram, 'uAspect');
 gl.bindFramebuffer(gl!.FRAMEBUFFER, maskFrameBuffer);
 gl.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
 gl.useProgram(maskProgram);
-gl.uniform2f(uCenterLoc, 0.25, 0.5); // upstream-ish, vertically centered
-gl.uniform1f(uRadiusLoc, 0.2);
+gl.uniform2f(uCenterLoc, 0.2, 0.49); // upstream-ish, vertically centered
+gl.uniform1f(uRadiusLoc, 0.05);
 gl.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
 drawFullscreenTriangle(gl, vao);
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-const TAU = 0.8;
+const TAU = 0.55;
+const INLET_DENSITY = 1.0;
+const INLET_VELOCITY: [number, number] = [0.1, 0.0];
 const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
-sim.initialize(1.0, [0.1, 0.0]);
+sim.initialize(INLET_DENSITY, [0.15, 0.0]);
 
 const displayProgram = createProgram(gl, vertSrc, velocityDisplayFragSrc);
 const uMacroLoc = gl.getUniformLocation(displayProgram, 'uMacro');
@@ -76,7 +78,7 @@ function frame(now : number) {
   
   utils.resizeCanvasToDisplaySize(canvas, gl!);
 
-  sim.step(maskTexture, TAU);
+  sim.step(maskTexture, TAU, INLET_DENSITY, INLET_VELOCITY);
 
   gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
   gl!.viewport(0, 0, canvas.width, canvas.height);
