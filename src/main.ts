@@ -44,34 +44,20 @@ const fpsEl = document.querySelector<HTMLElement>('#fps-readout');
 const vao = createFullscreenTriangle(gl);
 
 const maskTexture = createFloatTexture(gl, SIM_WIDTH, SIM_HEIGHT);
-const maskFrameBuffer = createFrameBuffer(gl, maskTexture);
-const maskProgram = createProgram(gl, vertSrc, maskFragSrc);
-
-const uCenterLoc = gl.getUniformLocation(maskProgram, 'uCenter');
-const uRadiusLoc = gl.getUniformLocation(maskProgram, 'uRadius');
-const uAspectLoc = gl.getUniformLocation(maskProgram, 'uAspect');
-
-gl.bindFramebuffer(gl!.FRAMEBUFFER, maskFrameBuffer);
-gl.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
-gl.useProgram(maskProgram);
-gl.uniform2f(uCenterLoc, 0.2, 0.5); // upstream-ish, vertically centered
-gl.uniform1f(uRadiusLoc, 0.05);
-gl.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
-drawFullscreenTriangle(gl, vao);
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-const TAU = 0.8;
-const INLET_DENSITY = 1.0;
-const INLET_VELOCITY: [number, number] = [0.3, 0.0];
-const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
-sim.initialize(INLET_DENSITY, [0.0, 0.0]);
+addMask(gl, maskTexture);
 
 const displayProgram = createProgram(gl, vertSrc, velocityDisplayFragSrc);
 const uMacroLoc = gl.getUniformLocation(displayProgram, 'uMacro');
 const uMaskLoc = gl.getUniformLocation(displayProgram, 'uMask');
 
+const TAU = 0.8;
+const INLET_DENSITY = 1.0;
+const INLET_VELOCITY: [number, number] = [0.0, 0.0];
 const TARGET_INLET_VELOCITY: [number, number] = [1.0, 0.0];
 const RAMP_DURATION_MS = 15000; 
+
+const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
+sim.initialize(INLET_DENSITY, [0.0, 0.0]);
 
 function frame(now : number) {
   if (!startTime) {
@@ -115,3 +101,22 @@ function frame(now : number) {
 }
 
 requestAnimationFrame(frame);
+
+// Temp function for mask creation
+function addMask(gl: WebGL2RenderingContext, texture: WebGLTexture): void {
+  const maskFrameBuffer = createFrameBuffer(gl, texture);
+  const maskProgram = createProgram(gl, vertSrc, maskFragSrc);
+
+  const uCenterLoc = gl.getUniformLocation(maskProgram, 'uCenter');
+  const uRadiusLoc = gl.getUniformLocation(maskProgram, 'uRadius');
+  const uAspectLoc = gl.getUniformLocation(maskProgram, 'uAspect');
+
+  gl.bindFramebuffer(gl!.FRAMEBUFFER, maskFrameBuffer);
+  gl.viewport(0, 0, SIM_WIDTH, SIM_HEIGHT);
+  gl.useProgram(maskProgram);
+  gl.uniform2f(uCenterLoc, 0.2, 0.5); 
+  gl.uniform1f(uRadiusLoc, 0.05);
+  gl.uniform1f(uAspectLoc, SIM_WIDTH / SIM_HEIGHT);
+  drawFullscreenTriangle(gl, vao);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
