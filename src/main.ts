@@ -39,6 +39,8 @@ window.addEventListener('resize', () => utils.resizeCanvasToDisplaySize(canvas, 
 let frameCount = 0;
 let lastFPSsampleTime = 0;
 let startTime = 0;
+let currentVelMagnitude = 0;
+let lastFrameTime = 0;
 const fpsEl = document.querySelector<HTMLElement>('#fps-readout');
 
 const vao = createFullscreenTriangle(gl);
@@ -52,12 +54,12 @@ const uMaskLoc = gl.getUniformLocation(displayProgram, 'uMask');
 
 const TAU = 0.8;
 const INLET_DENSITY = 1.0;
-const INLET_VELOCITY: [number, number] = [0.0, 0.0];
-const TARGET_INLET_VELOCITY: [number, number] = [1.0, 0.0];
-const RAMP_DURATION_MS = 15000; 
+const INLET_ACCEL = 0.03;
+const INITIAL_INLET_VELOCITY: [number, number] = [0.0, 0.0];
+const TARGET_INLET_VELOCITY: [number, number] = [0.2, 0.0];
 
 const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
-sim.initialize(INLET_DENSITY, [0.0, 0.0]);
+sim.initialize(INLET_DENSITY, INITIAL_INLET_VELOCITY);
 
 function frame(now : number) {
   if (!startTime) {
@@ -65,11 +67,15 @@ function frame(now : number) {
     lastFPSsampleTime = now;
   }
 
-  const elapsedMs = now - startTime;
-  const rampT = Math.min(elapsedMs / RAMP_DURATION_MS, 1.0);
+  const dt = (now - lastFrameTime) / 1000;
+  lastFrameTime = now;
+
+  const targetMagnitude = Math.hypot(TARGET_INLET_VELOCITY[0], TARGET_INLET_VELOCITY[1]);
+  currentVelMagnitude = Math.min(currentVelMagnitude + INLET_ACCEL * dt, targetMagnitude);
+  const scale = targetMagnitude > 0 ? currentVelMagnitude / targetMagnitude : 0;
   const currentInletVelocity: [number, number] = [
-    TARGET_INLET_VELOCITY[0] * rampT,
-    TARGET_INLET_VELOCITY[1] * rampT,
+    TARGET_INLET_VELOCITY[0] * scale,
+    TARGET_INLET_VELOCITY[1] * scale,
   ];
 
   utils.resizeCanvasToDisplaySize(canvas, gl!);
