@@ -41,10 +41,10 @@ void main() {
     // non-physical clipping in extreme cases -- a completely standard
     // tradeoff for a real-time sim.
     float speed = length(u);
-    float maxSpeed = 0.8;
+    float maxSpeed = 0.3;
     if (speed > maxSpeed) {
-    u = u * (maxSpeed / speed);
-}
+        u = u * (maxSpeed / speed);
+    }
 
     float invTau = 1.0 / uTau;
 

@@ -33,6 +33,7 @@ void main() {
             feq(vec2(-1.0, 1.0), 1.0/36.0, rho, u),
             feq(vec2(-1.0, -1.0), 1.0/36.0, rho, u)
         );
+        return;
     } else {
         outColor = vec4(feq(vec2(1.0, -1.0), 1.0/36.0, rho, u), 0.0, 0.0, 0.0);
         return;
