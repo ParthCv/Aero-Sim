@@ -96,10 +96,14 @@ $$\boxed{f_i^{\text{new}}(\vec{x}) = \left[ 1 - M(\vec{x} - \vec{e}_i) \right] \
 </div>
 Right now there is no outlet for the fluid to escape, or an inlet. That is the next step.
 # Boundary Conditions
-When you stream distributions across the grid, fluid packets move one step along their lattice vectors $\vec{e}_i$:
+When you stream distributions across the grid, fluid packets move one step along their lattice vectors $\vec{e}_i$: 
+
 $$f_i(\vec{x}, t + \Delta t) = f_i^*(\vec{x} - \vec{e}_i, t)$$
+
 At any boundary, this equation breaks down because the upstream coordinate $\vec{x} - \vec{e}_i$ lies outside the simulation domain and because macroscopic density and velocity depend on having all 9 directions
-$$\rho = \sum_{i=0}^8 f_i, \qquad \rho \vec{u} = \sum_{i=0}^8 f_i \vec{e}_i$$the boundary condition must construct the missing distributions ($f_1, f_5, f_8$) so that the resulting macroscopic velocity matches desired inlet speed $\vec{u}_{\text{inlet}}$.
+$$\rho = \sum_{i=0}^8 f_i, \qquad \rho \vec{u} = \sum_{i=0}^8 f_i \vec{e}_i$$
+
+The boundary condition must construct the missing distributions ($f_1, f_5, f_8$) so that the resulting macroscopic velocity matches desired inlet speed $\vec{u}_{\text{inlet}}$.
 ## Inlet Theory
 There are two ways to reconstruct the missing inlet distributions.
 ### Equilibrium Dirichlet Condition
