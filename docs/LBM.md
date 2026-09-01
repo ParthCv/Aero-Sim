@@ -113,4 +113,10 @@ To let vortices leave the simulation without artificial reflections, the boundar
 
 $$\frac{\partial f_i}{\partial t} + U_{\text{conv}} \frac{\partial f_i}{\partial x} = 0$$
 
-where $U_{\text{conv}}$ is the speed at which structures move downstream.
+where $U_{\text{conv}}$ is the speed at which structures move downstream. Though for very fast speed changes the acoustic collisions.
+
+To fix that we have to do two thing add Sponge Layers to absorb these sudden fast waves of air or ramp the inlet velocity with a target velocity to hit. And the end result look like this.
+
+<div align="center">
+	<img src="images/phase_2.png" alt="D2q9">
+</div>
