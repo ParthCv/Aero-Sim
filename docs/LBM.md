@@ -126,3 +126,36 @@ To fix that we have to do two thing add Sponge Layers to absorb these sudden fas
 <div align="center">
 	<img src="images/phase_2.png" alt="D2q9">
 </div>
+# Real-world Units
+Now we need to bridge the non-dimensional discrete Lattice Boltzmann equation to real-world physics. To do this we need dimensional mapping via **Buckingham theorem** and and hydrodynamic similarity. This is apparently common practice in LBM based CDFs
+## Physical Length
+We need to chose the physical length, but this is a free choice, we can define the real-world size `dx`. So lets say for our 512-cell-wide domain spans 2 meters in the wind tunnel `dx` comes out to be.
+$$ dx = \frac{(\text{real width in meters})}{(\text{grid width in cells})} = \frac{2.0}{512} = 0.00390625 \text{ m/cells}$$
+This number now is the anchor for all length based conversion including how big our car will be.
+## Kinematic Viscosity
+This is the property of the air itself, not something chosen. It is a physical constant that does vary with the temperature (humidity/altitude). At sea level and room temperature:
+$$v_{physical} = 1.5 \times 10^{-5}\text{ m}^2/\text{s}$$
+We are already using tau ($\tau$) as 0.55 for numerical stability. And this isn't just a stability knob, it directly determines how much of our viscosity is simulated (in lattice units).
+$$v_\text{lattice} = \frac{(\tau - 0.5)}{3}$$
+for $\tau$ = 0.55: $v_\text{lattice}$ = 0.0167 lattice units sq.
+## Derive $dt$, the real seconds to one lattice timestep
+Now $dt$ isn't a choice, its forced by our lattice viscosity to represent the same physical process as the air's viscosity.
+$$v_\text{physical} = v_\text{lattice} \times (\frac{dx^3}{dt}) $$
+We can rearrange this to solve for $dt$
+$$dt = v_\text{lattice} \times \frac{dx^2}{v_\text{physical}}$$
+$$dt = 0.0167 \times \frac{(0.00390625)^2}{0.000015} = 0.017$$
+
+meaning each physics substep we run represents about 17 milliseconds of real time.
+## Convert velocity in all directions
+With $dx$ and $dt$ fixed, velocity conversion is just a units ratio:
+$$u_\text{physical}\text{ (m/s)} = U_\text{lattice} \times (\frac{dx}{dt})$$
+$$u_\text{lattice} = U_\text{physical} \times (\frac{dt}{dx})$$
+So for simulating 250km/h (69.4m/s), it would look like so:
+$$u_\text{lattice} = 69.4 \times (\frac{0.017}{0.00390625}) \approx 302$$
+Now this values is way past our 0.1-0.3 range, this tell us that our current $dx$ (2m domain over 512 cells) is too coarse relative to our $\tau$ to simulate F1 speeds right now. 
+
+So... either need a much larger τ (more numerical viscosity, less accurate turbulence), a finer `dx` (more cells, more compute), or accept that sim intentionally runs at a "scaled-down" effective speed for visualization purposes while still being internally self-consistent.
+## Reynolds number
+The mismatch we have above with our speeds is survivable but the aerodynamic behavior like separation, vortex shedding, drag coefficient is governed by Reynolds number.
+$$ Re = u \times \frac{L}{v}$$
+$L$ here is the characteristic length. If we cant match the velocity to real world speeds at least we can get physically meaning full shapes of flow by matching the Ryenolds number between lattice and reality by adjusting `τ` (hence `ν_lattice`) and/or `dx` so that `Re_lattice ≈ Re_physical`
