@@ -4,6 +4,7 @@ import {createProgram} from './utils/shader_utils'
 import { createFullscreenTriangle, drawFullscreenTriangle } from './rendering/fullscreen_quad'
 import { createFloatTexture, createFrameBuffer } from './rendering/fbo';
 import { LatticeBoltzmannSim } from './sim/lattice_boltzmann_sim';
+import { UnitSystem } from './sim/unit_system';
 
 import vertSrc from './assets/shaders/passthrough.vert?raw'
 import maskFragSrc from './assets/shaders/mask.frag?raw'
@@ -52,11 +53,26 @@ const displayProgram = createProgram(gl, vertSrc, velocityDisplayFragSrc);
 const uMacroLoc = gl.getUniformLocation(displayProgram, 'uMacro');
 const uMaskLoc = gl.getUniformLocation(displayProgram, 'uMask');
 
-const TAU = 0.8;
+const unitSystem = new UnitSystem({
+  domainWidthMeters: 2.0,
+  gridWidthCells: SIM_WIDTH,
+  obstacleDiameterCells: 0.05 * 2 * SIM_WIDTH,
+  safeLatticeVelocity: 0.1,
+  minTau: 0.55,
+  maxTau: 2.0,
+});
+
+const requestedSpeedKmh = 250;
+const { tau, clamped, reynolds } = unitSystem.solveForTau(unitSystem.kmhToMs(requestedSpeedKmh));
+
+console.log(`Re=${reynolds.toFixed(0)}, tau=${tau.toFixed(4)}, clamped=${clamped}`);
+console.log(`requested Re=${reynolds.toFixed(0)}, actually simulating Re≈${unitSystem.achievedReynolds(tau).toFixed(0)} due to solver stability limits`)
+
+const TAU = tau;
 const INLET_DENSITY = 1.0;
 const INLET_ACCEL = 0.03;
 const INITIAL_INLET_VELOCITY: [number, number] = [0.0, 0.0];
-const TARGET_INLET_VELOCITY: [number, number] = [0.2, 0.0];
+const TARGET_INLET_VELOCITY: [number, number] = [unitSystem.latticeVelocity, 0.0];
 
 const sim = new LatticeBoltzmannSim(gl, SIM_WIDTH, SIM_HEIGHT, vao);
 sim.initialize(INLET_DENSITY, INITIAL_INLET_VELOCITY);
